@@ -1,9 +1,9 @@
 <template>
-    <div class="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <!-- Game Container -->
-      <div class="w-full max-w-3xl bg-white rounded-lg shadow-lg p-6">
-        <!-- Game Title -->
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Vue Typing Master</h1>
+    <div class="min-h-screen bg-gradient-to-r from-[#5680E9] via-[#84CEEB] to-[#E9F1FB] flex flex-col items-center justify-center p-4">
+  <!-- Game Container -->
+  <div class="w-full max-w-3xl bg-white/80 rounded-lg shadow-lg p-6">
+    <!-- Game Title -->
+    <h1 class="text-4xl font-extrabold text-gray-800 mb-6">Vue Typing Master</h1>
   
         <!-- Game Menu (shown when not playing) -->
         <div v-if="gameState === 'menu'" class="space-y-6">
@@ -373,8 +373,8 @@
   
   <style>
   :root {
-    --color-primary: #10b981;
-    --color-primary-dark: #059669;
+    --color-primary: #116466;
+    --color-primary-dark: #D1E8E2;
   }
   
   .bg-primary {
