@@ -1,0 +1,500 @@
+<template>
+  <main class="flex min-h-screen flex-col items-center justify-between p-4 md:p-24">
+    <div class="z-10 max-w-5xl w-full items-center justify-center font-mono text-sm flex flex-col">
+      <h1 class="text-4xl font-bold mb-8 text-center">Sudoku Solver</h1>
+      <div class="flex flex-col items-center gap-6">
+        <!-- Controls -->
+        <div class="flex flex-col md:flex-row gap-4 items-center mb-4">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium">Difficulty:</span>
+            <select v-model="difficulty" class="border rounded-md px-3 py-1 w-[120px]">
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
+
+          <div class="flex gap-2">
+            <button @click="handleGenerate" class="p-2 border rounded-md hover:bg-gray-100" title="Generate new puzzle">
+              <RefreshCw class="h-4 w-4" />
+            </button>
+
+            <button @click="handleSolve" class="p-2 bg-primary text-white rounded-md hover:bg-primary/90" :disabled="solving" title="Solve puzzle">
+              <Play class="h-4 w-4" />
+            </button>
+
+            <button @click="handleValidate" class="p-2 border rounded-md hover:bg-gray-100" title="Validate puzzle">
+              <Check class="h-4 w-4" />
+            </button>
+
+            <button @click="handleReset" class="p-2 border rounded-md hover:bg-gray-100" title="Reset to original">
+              <AlertTriangle class="h-4 w-4" />
+            </button>
+
+            <button @click="handleClear" class="p-2 border rounded-md hover:bg-gray-100" title="Clear board">
+              <Trash2 class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Message Alert -->
+        <div v-if="message" :class="['mb-4 p-4 rounded-md w-full max-w-md', messageType === 'error' ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800']">
+          {{ message }}
+        </div>
+
+        <!-- Sudoku Grid -->
+        <div class="grid grid-cols-9 gap-[1px] bg-gray-300 dark:bg-gray-700 p-[1px] rounded-md shadow-md">
+          <template v-for="(row, rowIndex) in board" :key="rowIndex">
+            <div
+              v-for="(cell, colIndex) in row"
+              :key="`${rowIndex}-${colIndex}`"
+              :class="[
+                'w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 flex items-center justify-center cursor-pointer font-semibold text-lg transition-colors',
+                (Math.floor(rowIndex / 3) + Math.floor(colIndex / 3)) % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800',
+                selectedCell && selectedCell[0] === rowIndex && selectedCell[1] === colIndex ? 'bg-primary/20' : '',
+                originalBoard[rowIndex][colIndex] !== 0 ? 'text-primary font-bold' : 'text-gray-700 dark:text-gray-300'
+              ]"
+              @click="handleCellClick(rowIndex, colIndex)"
+            >
+              {{ cell !== 0 ? cell : '' }}
+            </div>
+          </template>
+        </div>
+
+        <!-- Number Input Buttons -->
+        <div class="grid grid-cols-5 gap-2 mt-4">
+          <button
+            v-for="num in 9"
+            :key="num"
+            class="w-10 h-10 text-lg font-semibold border rounded-md hover:bg-gray-100"
+            @click="handleNumberInput(num)"
+          >
+            {{ num }}
+          </button>
+          <button
+            class="w-10 h-10 text-lg font-semibold border rounded-md hover:bg-gray-100"
+            @click="selectedCell && handleNumberInput(0)"
+          >
+            <Trash2 class="h-4 w-4 mx-auto" />
+          </button>
+        </div>
+
+        <!-- Help Text -->
+        <div class="mt-6 text-sm text-gray-500 max-w-md text-center">
+          <p class="flex items-center justify-center gap-1">
+            <HelpCircle class="h-4 w-4" />
+            Click a cell and use the number buttons or keyboard to enter numbers
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue';
+import { RefreshCw, Play, Check, Trash2, HelpCircle, AlertTriangle } from 'lucide-vue-next';
+
+// Constants
+const EMPTY_BOARD = () => Array(9).fill().map(() => Array(9).fill(0));
+
+// Reactive state
+const board = ref(EMPTY_BOARD());
+const originalBoard = ref(EMPTY_BOARD());
+const selectedCell = ref(null);
+const difficulty = ref('medium');
+const message = ref(null);
+const messageType = ref(null);
+const solving = ref(false);
+
+// Check if a number can be placed at a specific position
+function isValid(board, row, col, num) {
+  // Check row
+  for (let x = 0; x < 9; x++) {
+    if (board[row][x] === num) {
+      return false;
+    }
+  }
+
+  // Check column
+  for (let y = 0; y < 9; y++) {
+    if (board[y][col] === num) {
+      return false;
+    }
+  }
+
+  // Check 3x3 box
+  const boxRow = Math.floor(row / 3) * 3;
+  const boxCol = Math.floor(col / 3) * 3;
+
+  for (let y = 0; y < 3; y++) {
+    for (let x = 0; x < 3; x++) {
+      if (board[boxRow + y][boxCol + x] === num) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+// Solve the Sudoku puzzle using backtracking
+function solveSudoku(board) {
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      // Find an empty cell
+      if (board[row][col] === 0) {
+        // Try placing numbers 1-9
+        for (let num = 1; num <= 9; num++) {
+          if (isValid(board, row, col, num)) {
+            // Place the number
+            board[row][col] = num;
+
+            // Recursively try to solve the rest of the puzzle
+            if (solveSudoku(board)) {
+              return true;
+            }
+
+            // If placing the number doesn't lead to a solution, backtrack
+            board[row][col] = 0;
+          }
+        }
+
+        // If no number can be placed, the puzzle is unsolvable
+        return false;
+      }
+    }
+  }
+
+  // If we've filled all cells, the puzzle is solved
+  return true;
+}
+
+// Check if the current state of the board is valid
+function isValidSudoku(board) {
+  // Check rows
+  for (let row = 0; row < 9; row++) {
+    const seen = new Set();
+    for (let col = 0; col < 9; col++) {
+      const cell = board[row][col];
+      if (cell !== 0) {
+        if (seen.has(cell)) {
+          return false;
+        }
+        seen.add(cell);
+      }
+    }
+  }
+
+  // Check columns
+  for (let col = 0; col < 9; col++) {
+    const seen = new Set();
+    for (let row = 0; row < 9; row++) {
+      const cell = board[row][col];
+      if (cell !== 0) {
+        if (seen.has(cell)) {
+          return false;
+        }
+        seen.add(cell);
+      }
+    }
+  }
+
+  // Check 3x3 boxes
+  for (let boxRow = 0; boxRow < 3; boxRow++) {
+    for (let boxCol = 0; boxCol < 3; boxCol++) {
+      const seen = new Set();
+      for (let row = 0; row < 3; row++) {
+        for (let col = 0; col < 3; col++) {
+          const cell = board[boxRow * 3 + row][boxCol * 3 + col];
+          if (cell !== 0) {
+            if (seen.has(cell)) {
+              return false;
+            }
+            seen.add(cell);
+          }
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+// Check if the puzzle is completely solved
+function checkSolution(board) {
+  // Check if the board is valid
+  if (!isValidSudoku(board)) {
+    return false;
+  }
+
+  // Check if the board is complete (no zeros)
+  for (let row = 0; row < 9; row++) {
+    for (let col = 0; col < 9; col++) {
+      if (board[row][col] === 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+// Count the number of solutions a puzzle has (up to 2)
+function countSolutions(board) {
+  let solutions = 0;
+
+  function solve(board, row, col) {
+    if (solutions >= 2) return; // Stop if we've found more than one solution
+
+    if (row === 9) {
+      solutions++; // Found a solution
+      return;
+    }
+
+    // Move to the next cell
+    const nextRow = col === 8 ? row + 1 : row;
+    const nextCol = col === 8 ? 0 : col + 1;
+
+    // If the cell is already filled, move to the next cell
+    if (board[row][col] !== 0) {
+      solve(board, nextRow, nextCol);
+      return;
+    }
+
+    // Try each number
+    for (let num = 1; num <= 9; num++) {
+      if (isValid(board, row, col, num)) {
+        board[row][col] = num;
+        solve(board, nextRow, nextCol);
+        board[row][col] = 0; // Backtrack
+      }
+    }
+  }
+
+  // Find the first empty cell
+  let startRow = 0,
+    startCol = 0;
+  let found = false;
+
+  for (let row = 0; row < 9 && !found; row++) {
+    for (let col = 0; col < 9 && !found; col++) {
+      if (board[row][col] === 0) {
+        startRow = row;
+        startCol = col;
+        found = true;
+      }
+    }
+  }
+
+  if (found) {
+    solve(board, startRow, startCol);
+  } else {
+    solutions = 1; // The board is already filled
+  }
+
+  return solutions;
+}
+
+// Generate a Sudoku puzzle with a given difficulty
+function generateSudoku(difficultyLevel) {
+  // Create a solved puzzle
+  const solvedBoard = EMPTY_BOARD();
+  solveSudoku(solvedBoard);
+
+  // Create a copy of the solved puzzle
+  const puzzle = JSON.parse(JSON.stringify(solvedBoard));
+
+  // Determine how many cells to remove based on difficulty
+  let cellsToRemove;
+  switch (difficultyLevel) {
+    case 'easy':
+      cellsToRemove = 40; // 41 clues remain
+      break;
+    case 'medium':
+      cellsToRemove = 50; // 31 clues remain
+      break;
+    case 'hard':
+      cellsToRemove = 60; // 21 clues remain
+      break;
+    default:
+      cellsToRemove = 50;
+  }
+
+  // Remove cells randomly
+  let removed = 0;
+  while (removed < cellsToRemove) {
+    const row = Math.floor(Math.random() * 9);
+    const col = Math.floor(Math.random() * 9);
+
+    if (puzzle[row][col] !== 0) {
+      const temp = puzzle[row][col];
+      puzzle[row][col] = 0;
+
+      // Make sure the puzzle still has a unique solution
+      const copy = JSON.parse(JSON.stringify(puzzle));
+
+      // If we've removed enough cells for the difficulty level, we don't need
+      // to check for uniqueness anymore to improve performance
+      if (removed >= 30) {
+        removed++;
+        continue;
+      }
+
+      // Count solutions
+      const solutions = countSolutions(copy);
+
+      if (solutions !== 1) {
+        // If removing this cell results in multiple solutions, put it back
+        puzzle[row][col] = temp;
+      } else {
+        removed++;
+      }
+    }
+  }
+
+  return puzzle;
+}
+
+// Generate a new puzzle
+function handleGenerate() {
+  const newBoard = generateSudoku(difficulty.value);
+  board.value = JSON.parse(JSON.stringify(newBoard));
+  originalBoard.value = JSON.parse(JSON.stringify(newBoard));
+  message.value = null;
+}
+
+// Solve the current puzzle
+function handleSolve() {
+  if (!isValidSudoku(board.value)) {
+    message.value = "This puzzle is invalid or unsolvable.";
+    messageType.value = "error";
+    return;
+  }
+
+  solving.value = true;
+
+  // Small delay to allow UI to update
+  setTimeout(() => {
+    const solvedBoard = JSON.parse(JSON.stringify(board.value));
+    const solved = solveSudoku(solvedBoard);
+
+    if (solved) {
+      board.value = solvedBoard;
+      message.value = "Puzzle solved successfully!";
+      messageType.value = "success";
+    } else {
+      message.value = "This puzzle is unsolvable.";
+      messageType.value = "error";
+    }
+
+    solving.value = false;
+  }, 100);
+}
+
+// Check if the current state is valid
+function handleValidate() {
+  if (isValidSudoku(board.value)) {
+    if (checkSolution(board.value)) {
+      message.value = "The puzzle is solved correctly!";
+      messageType.value = "success";
+    } else {
+      message.value = "The puzzle is valid but not yet solved.";
+      messageType.value = "success";
+    }
+  } else {
+    message.value = "The puzzle has conflicts.";
+    messageType.value = "error";
+  }
+}
+
+// Reset to original puzzle
+function handleReset() {
+  board.value = JSON.parse(JSON.stringify(originalBoard.value));
+  message.value = null;
+}
+
+// Clear the board
+function handleClear() {
+  board.value = EMPTY_BOARD();
+  originalBoard.value = EMPTY_BOARD();
+  message.value = null;
+}
+
+// Handle cell selection
+function handleCellClick(row, col) {
+  selectedCell.value = [row, col];
+}
+
+// Handle number input
+function handleNumberInput(num) {
+  if (selectedCell.value) {
+    const [row, col] = selectedCell.value;
+
+    // Check if the cell is part of the original puzzle
+    if (originalBoard.value[row][col] === 0) {
+      // Create a new board to ensure reactivity
+      const newBoard = JSON.parse(JSON.stringify(board.value));
+      newBoard[row][col] = num === newBoard[row][col] ? 0 : num; // Toggle if same number
+      board.value = newBoard;
+      message.value = null;
+    }
+  }
+}
+
+// Handle keyboard input
+function handleKeyDown(e) {
+  if (selectedCell.value) {
+    const key = e.key;
+    if (/^[1-9]$/.test(key)) {
+      handleNumberInput(Number.parseInt(key));
+    } else if (key === "Backspace" || key === "Delete" || key === "0") {
+      const [row, col] = selectedCell.value;
+      if (originalBoard.value[row][col] === 0) {
+        const newBoard = JSON.parse(JSON.stringify(board.value));
+        newBoard[row][col] = 0;
+        board.value = newBoard;
+      }
+    }
+  }
+}
+
+// Lifecycle hooks
+onMounted(() => {
+  window.addEventListener("keydown", handleKeyDown);
+  handleGenerate(); // Generate a puzzle on initial load
+});
+
+onUnmounted(() => {
+  window.removeEventListener("keydown", handleKeyDown);
+});
+</script>
+
+<style>
+:root {
+  --primary: #2563eb;
+  --primary-foreground: white;
+}
+
+.bg-primary {
+  background-color: var(--primary);
+}
+
+.bg-primary\/20 {
+  background-color: rgba(37, 99, 235, 0.2);
+}
+
+.bg-primary\/90 {
+  background-color: rgba(37, 99, 235, 0.9);
+}
+
+.text-primary {
+  color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary: #3b82f6;
+  }
+}
+</style>
