@@ -4,8 +4,15 @@
 ```
 npm install
 ```
+```
+npm install -g @vue/cli
+```
+```
+vue --version
+```
 
 ### Compiles and hot-reloads for development
+Proceed to file directory:
 ```
 npm run serve
 ```
