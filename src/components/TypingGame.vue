@@ -214,7 +214,10 @@
         'array', 'string', 'number', 'boolean', 'null', 'undefined', 'promise',
         'async', 'await', 'component', 'props', 'state', 'vue', 'react', 'angular',
         'javascript', 'typescript', 'python', 'java', 'code', 'algorithm', 'data',
-        'structure', 'interface', 'implementation', 'compiler', 'interpreter'
+        'structure', 'interface', 'implementation', 'compiler', 'interpreter',
+        'loop', 'condition', 'switch', 'operator', 'expression', 'recursion', 'stack',
+        'queue', 'binary', 'hexadecimal', 'debug', 'exception', 'library', 'framework',
+        'syntax', 'parameter', 'argument', 'callback', 'closure', 'object-oriented', 'encapsulation'
       ]
     },
     { 
@@ -224,7 +227,9 @@
         'bird', 'fish', 'insect', 'butterfly', 'eagle', 'lion', 'tiger',
         'elephant', 'dolphin', 'whale', 'coral', 'reef', 'desert', 'jungle',
         'savanna', 'tundra', 'glacier', 'volcano', 'earthquake', 'hurricane',
-        'climate', 'weather', 'rain', 'snow', 'wind', 'sunshine', 'cloud'
+        'climate', 'weather', 'rain', 'snow', 'wind', 'sunshine', 'cloud',
+        'thunder', 'lightning', 'fog', 'cave', 'valley', 'hill', 'meadow',
+        'prairie', 'rainforest', 'pond', 'stream', 'wildlife', 'ecosystem', 'habitat'
       ]
     },
     { 
@@ -234,10 +239,33 @@
         'chicken', 'fish', 'vegetable', 'fruit', 'apple', 'banana', 'orange',
         'grape', 'strawberry', 'blueberry', 'chocolate', 'vanilla', 'dessert',
         'cake', 'cookie', 'ice cream', 'coffee', 'tea', 'juice', 'water',
-        'milk', 'cheese', 'bread', 'rice', 'noodle', 'spice', 'herb'
+        'milk', 'cheese', 'bread', 'rice', 'noodle', 'spice', 'herb',
+        'honey', 'jam', 'butter', 'yogurt', 'mushroom', 'onion', 'garlic',
+        'pepper', 'tomato', 'cucumber', 'carrot', 'potato', 'beef', 'pork'
+      ]
+    },
+    {
+      name: 'Sports',
+      words: [
+        'soccer', 'basketball', 'tennis', 'baseball', 'cricket', 'golf', 'volleyball',
+        'swimming', 'running', 'cycling', 'boxing', 'skiing', 'surfing', 'hockey',
+        'athlete', 'coach', 'stadium', 'goal', 'team', 'tournament', 'medal', 'race',
+        'marathon', 'referee', 'score', 'pitch', 'court', 'field', 'league', 'championship',
+        'sprint', 'relay', 'dive', 'freestyle', 'gymnastics', 'wrestling', 'karate'
+      ]
+    },
+    {
+      name: 'Music',
+      words: [
+        'guitar', 'piano', 'drums', 'violin', 'saxophone', 'trumpet', 'flute',
+        'band', 'orchestra', 'song', 'melody', 'harmony', 'rhythm', 'lyric',
+        'album', 'concert', 'genre', 'pop', 'rock', 'jazz', 'classical', 'hiphop',
+        'rap', 'blues', 'folk', 'country', 'singer', 'composer', 'choir', 'duet',
+        'solo', 'tune', 'bass', 'keyboard', 'percussion', 'chorus', 'verse', 'bridge'
       ]
     }
   ];
+
   
   const durations = [30, 60, 120];
   
